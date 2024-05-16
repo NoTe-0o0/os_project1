@@ -2,65 +2,63 @@
 #include <fstream>
 #include <vector>
 #include <queue>
-#include <algorithm>
-#include <limits>
 
 using namespace std;
 
-struct Process {
+struct Task {
     int id;
-    int burstTime;
-    int arrivalTime;
-    int remainingTime;
-    int finishTime;
-    int waitingTime;
-    int turnaroundTime;
+    int burst;
+    int arrival;
+    int remaining;
+    int finish;
+    int waiting;
+    int turnaround;
     bool isFinished;
 };
 
-void fcfs(vector<Process>& processes, int csTime) {
+void fcfs(vector<Task>& tasks, int contextSwitch) {
     int currentTime = 0;
     cout << "\nGantt Chart:\n";
-    for (auto& p : processes) {
+    for (auto& t : tasks) {
         if (currentTime != 0) {
-            currentTime += csTime;
+            currentTime += contextSwitch;
         }
-        p.waitingTime = currentTime;
-        currentTime += p.burstTime;
-        p.finishTime = currentTime;
-        p.turnaroundTime = p.finishTime;
-        cout << "| P" << p.id << " (" << p.waitingTime << "-" << p.finishTime << ") ";
+        t.waiting = currentTime;
+        currentTime += t.burst;
+        t.finish = currentTime;
+        t.turnaround = t.finish;
+        cout << "| Task" << t.id << " (" << t.waiting << "-" << t.finish << ") ";
     }
     cout << "|\n";
 
-    cout << "Process\tFinish Time\tWaiting Time\tTurnaround Time\n";
-    for (const auto& p : processes) {
-        cout << "P" << p.id << "\t" << p.finishTime << "\t\t" << p.waitingTime << "\t\t" << p.turnaroundTime << "\n";
+    cout << "Task\tFinish Time\tWaiting Time\tTurnaround Time\n";
+    for (const auto& t : tasks) {
+        cout << "Task" << t.id << "\t" << t.finish << "\t\t" << t.waiting << "\t\t" << t.turnaround << "\n";
     }
 
-    double totalBurstTime = 0;
-    for (const auto& p : processes) {
-        totalBurstTime += p.burstTime;
+    double totalBurst = 0;
+    for (const auto& t : tasks) {
+        totalBurst += t.burst;
     }
-    double cpuUtilization = (totalBurstTime / (currentTime + csTime * (processes.size() - 1))) * 100;
+    double cpuUtilization = (totalBurst / (currentTime + contextSwitch * (tasks.size() - 1))) * 100;
     cout << "CPU Utilization = " << cpuUtilization << "%" << endl;
 }
 
-void srt(vector<Process>& processes, int csTime) {
+void srt(vector<Task>& tasks, int contextSwitch) {
     int currentTime = 0;
     int completed = 0;
-    int lastProcessId = 0;
-    int startPrintTime = 0;
+    int lastId = 0;
+    int startPrint = 0;
     cout << "\nGantt Chart:\n";
 
-    while (completed < processes.size()) {
+    while (completed < tasks.size()) {
         int idx = -1;
-        int minTime = numeric_limits<int>::max();
+        int minTime = INT_MAX;
 
-        for (int i = 0; i < processes.size(); i++) {
-            if (processes[i].arrivalTime <= currentTime && !processes[i].isFinished &&
-                processes[i].remainingTime < minTime) {
-                minTime = processes[i].remainingTime;
+        for (int i = 0; i < tasks.size(); i++) {
+            if (tasks[i].arrival <= currentTime && !tasks[i].isFinished &&
+                tasks[i].remaining < minTime) {
+                minTime = tasks[i].remaining;
                 idx = i;
             }
         }
@@ -69,54 +67,54 @@ void srt(vector<Process>& processes, int csTime) {
             currentTime++;
         }
         else {
-            if (lastProcessId != processes[idx].id && lastProcessId != 0) {
-                currentTime += csTime;
+            if (lastId != tasks[idx].id && lastId != 0) {
+                currentTime += contextSwitch;
             }
-            if (lastProcessId != processes[idx].id) {
-                if (lastProcessId != 0) {
-                    cout << "|" << "P" << lastProcessId << "(" << startPrintTime << "-" << currentTime << ")";
+            if (lastId != tasks[idx].id) {
+                if (lastId != 0) {
+                    cout << "|Task" << lastId << "(" << startPrint << "-" << currentTime << ")";
                 }
-                startPrintTime = currentTime;
-                lastProcessId = processes[idx].id;
+                startPrint = currentTime;
+                lastId = tasks[idx].id;
             }
-            processes[idx].remainingTime--;
+            tasks[idx].remaining--;
             currentTime++;
 
-            if (processes[idx].remainingTime == 0) {
-                processes[idx].finishTime = currentTime;
-                processes[idx].turnaroundTime = currentTime - processes[idx].arrivalTime;
-                processes[idx].waitingTime = processes[idx].turnaroundTime - processes[idx].burstTime;
-                processes[idx].isFinished = true;
+            if (tasks[idx].remaining == 0) {
+                tasks[idx].finish = currentTime;
+                tasks[idx].turnaround = currentTime - tasks[idx].arrival;
+                tasks[idx].waiting = tasks[idx].turnaround - tasks[idx].burst;
+                tasks[idx].isFinished = true;
                 completed++;
             }
         }
     }
-    if (lastProcessId != 0) {
-        cout << "|" << "P" << lastProcessId << "(" << startPrintTime << "-" << currentTime << ")";
+    if (lastId != 0) {
+        cout << "|Task" << lastId << "(" << startPrint << "-" << currentTime << ")";
     }
     cout << "|\n";
 
-    cout << "Process\tFinish Time\tWaiting Time\tTurnaround Time\n";
-    for (const auto& p : processes) {
-        cout << "P" << p.id << "\t" << p.finishTime << "\t\t" << p.waitingTime << "\t\t" << p.turnaroundTime << "\n";
+    cout << "Task\tFinish Time\tWaiting Time\tTurnaround Time\n";
+    for (const auto& t : tasks) {
+        cout << "Task" << t.id << "\t" << t.finish << "\t\t" << t.waiting << "\t\t" << t.turnaround << "\n";
     }
-    double totalBurstTime = 0;
-    for (const auto& p : processes) {
-        totalBurstTime += p.burstTime;
+    double totalBurst = 0;
+    for (const auto& t : tasks) {
+        totalBurst += t.burst;
     }
-    double cpuUtilization = (totalBurstTime / (currentTime + csTime * (processes.size() - 1))) * 100;
+    double cpuUtilization = (totalBurst / (currentTime + contextSwitch * (tasks.size() - 1))) * 100;
     cout << "CPU Utilization = " << cpuUtilization << "%" << endl;
 }
 
-void RR(vector<Process>& processes, int quantum, int csTime) {
+void RR(vector<Task>& tasks, int quantum, int contextSwitch) {
     queue<int> q;
     int currentTime = 0;
-    int lastProcessId = 0;
-    int startPrintTime = 0;
+    int lastId = 0;
+    int startPrint = 0;
     cout << "\nGantt Chart:\n";
 
-    for (int i = 0; i < processes.size(); i++) {
-        if (processes[i].arrivalTime <= currentTime) {
+    for (int i = 0; i < tasks.size(); i++) {
+        if (tasks[i].arrival <= currentTime) {
             q.push(i);
         }
     }
@@ -125,13 +123,13 @@ void RR(vector<Process>& processes, int quantum, int csTime) {
         int idx = q.front();
         q.pop();
 
-        if (lastProcessId != 0 && lastProcessId != processes[idx].id) {
-            currentTime += csTime;
+        if (lastId != 0 && lastId != tasks[idx].id) {
+            currentTime += contextSwitch;
         }
 
-        int runTime = min(quantum, processes[idx].remainingTime);
-        cout << "| P" << processes[idx].id << "(" << currentTime << "-" << (currentTime + runTime) << ")";
-        processes[idx].remainingTime -= runTime;
+        int runTime = min(quantum, tasks[idx].remaining);
+        cout << "| Task" << tasks[idx].id << "(" << currentTime << "-" << (currentTime + runTime) << ")";
+        tasks[idx].remaining -= runTime;
         currentTime += runTime;
 
         vector<int> tempQueue;
@@ -140,23 +138,21 @@ void RR(vector<Process>& processes, int quantum, int csTime) {
             q.pop();
         }
 
-
-        for (int i = 0; i < processes.size(); i++) {
-            if (!processes[i].isFinished && processes[i].arrivalTime > processes[idx].arrivalTime && processes[i].arrivalTime <= currentTime && find(tempQueue.begin(), tempQueue.end(), i) == tempQueue.end()) {
+        for (int i = 0; i < tasks.size(); i++) {
+            if (!tasks[i].isFinished && tasks[i].arrival > tasks[idx].arrival && tasks[i].arrival <= currentTime && find(tempQueue.begin(), tempQueue.end(), i) == tempQueue.end()) {
                 tempQueue.push_back(i);
             }
         }
 
-        if (processes[idx].remainingTime > 0) {
+        if (tasks[idx].remaining > 0) {
             tempQueue.push_back(idx);
         }
         else {
-            processes[idx].isFinished = true;
-            processes[idx].finishTime = currentTime;
-            processes[idx].turnaroundTime = currentTime - processes[idx].arrivalTime;
-            processes[idx].waitingTime = processes[idx].turnaroundTime - processes[idx].burstTime;
+            tasks[idx].isFinished = true;
+            tasks[idx].finish = currentTime;
+            tasks[idx].turnaround = currentTime - tasks[idx].arrival;
+            tasks[idx].waiting = tasks[idx].turnaround - tasks[idx].burst;
         }
-
 
         for (int id : tempQueue) {
             q.push(id);
@@ -164,35 +160,29 @@ void RR(vector<Process>& processes, int quantum, int csTime) {
     }
 
     cout << "|\n";
-    cout << "Process\tFinish Time\tWaiting Time\tTurnaround Time\n";
-    for (const auto& p : processes) {
-        cout << "P" << p.id << "\t" << p.finishTime << "\t\t" << p.waitingTime << "\t\t" << p.turnaroundTime << "\n";
+    cout << "Task\tFinish Time\tWaiting Time\tTurnaround Time\n";
+    for (const auto& t : tasks) {
+        cout << "Task" << t.id << "\t" << t.finish << "\t\t" << t.waiting << "\t\t" << t.turnaround << "\n";
     }
-    double totalBurstTime = 0;
-    for (const auto& p : processes) {
-        totalBurstTime += p.burstTime;
+    double totalBurst = 0;
+    for (const auto& t : tasks) {
+        totalBurst += t.burst;
     }
-    double cpuUtilization = (totalBurstTime / (currentTime + csTime * (processes.size() - 1))) * 100;
+    double cpuUtilization = (totalBurst / (currentTime + contextSwitch * (tasks.size() - 1))) * 100;
     cout << "CPU Utilization = " << cpuUtilization << "%" << endl;
 }
 
-
-
-
-
-
-
-double calculateCPUUtilization(const vector<Process>& processes, int csTime, int currentTime) {
-    double totalBurstTime = 0;
-    for (const auto& p : processes) {
-        totalBurstTime += p.burstTime;
+double calculateCPUUtilization(const vector<Task>& tasks, int contextSwitch, int currentTime) {
+    double totalBurst = 0;
+    for (const auto& t : tasks) {
+        totalBurst += t.burst;
     }
-    double cpuUtilization = (totalBurstTime / (currentTime + csTime * (processes.size() - 1))) * 100;
+    double cpuUtilization = (totalBurst / (currentTime + contextSwitch * (tasks.size() - 1))) * 100;
     return cpuUtilization;
 }
 
 int main() {
-    string filePath = "C:/Users/97056/Desktop/os_project(1)/os_input.txt";
+    string filePath = "C:/Users/97056/Desktop/os_project(1)/os_project(1)/os_input.txt";
     ifstream inFile(filePath);
     if (!inFile) {
         cerr << "Error opening file: " << filePath << endl;
@@ -207,28 +197,28 @@ int main() {
     cout << "Enter your choice (1-3): ";
     cin >> choice;
 
-    int numberOfProcesses, csTime, quantum;
+    int numberOfTasks, contextSwitch, quantum;
 
-    inFile >> numberOfProcesses >> csTime >> quantum;
+    inFile >> numberOfTasks >> contextSwitch >> quantum;
 
-    vector<Process> processes(numberOfProcesses);
-    for (int i = 0; i < numberOfProcesses; i++) {
-        inFile >> processes[i].arrivalTime >> processes[i].burstTime;
-        processes[i].id = i + 1;
-        processes[i].remainingTime = processes[i].burstTime;
-        processes[i].isFinished = false;
+    vector<Task> tasks(numberOfTasks);
+    for (int i = 0; i < numberOfTasks; i++) {
+        inFile >> tasks[i].arrival >> tasks[i].burst;
+        tasks[i].id = i + 1;
+        tasks[i].remaining = tasks[i].burst;
+        tasks[i].isFinished = false;
     }
 
     int currentTime = 0;
     switch (choice) {
     case 1:
-        fcfs(processes, csTime);
+        fcfs(tasks, contextSwitch);
         break;
     case 2:
-        srt(processes, csTime);
+        srt(tasks, contextSwitch);
         break;
     case 3:
-        RR(processes, quantum, csTime);
+        RR(tasks, quantum, contextSwitch);
         break;
     default:
         cout << "Invalid choice. Please select a valid option (1-3).\n";
@@ -237,4 +227,3 @@ int main() {
 
     return 0;
 }
-
